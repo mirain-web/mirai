@@ -24,8 +24,8 @@
     user-select: none;
     touch-action: none;
     box-shadow: 0 8px 20px rgba(0,0,0,.2);
-    max-width: 300px;   /* poster maksimum genişlik */
-    max-height: 400px;  /* poster maksimum yükseklik */
+    max-width: 300px;   /* maksimum genişlik */
+    max-height: 400px;  /* maksimum yükseklik */
   }
   .poster:active { cursor: grabbing; }
 
@@ -37,7 +37,13 @@
     max-height: 100%;
   }
 
-  .hint { position: absolute; inset: auto 12px 12px auto; font-size: 12px; opacity: .6; color:#333; }
+  .hint {
+    position: absolute;
+    inset: auto 12px 12px auto;
+    font-size: 12px;
+    opacity: .6;
+    color:#333;
+  }
 
   /* Modal (fullscreen) */
   .modal {
@@ -94,10 +100,10 @@
 <script>
 (() => {
   const board = document.getElementById('board');
-  const posters = board.querySelectorAll('.poster img');
   let active = null, startX = 0, startY = 0, origX = 0, origY = 0, zTop = 10;
+  let downX = 0, downY = 0, moved = false;
 
-  // sürükleme
+  // sürükleme yardımcıları
   function px(n){ return `${n}px`; }
   function getXY(el){
     const cs = getComputedStyle(el);
@@ -116,6 +122,11 @@
     const ptY = (e.clientY ?? (e.touches && e.touches[0].clientY));
     startX = ptX - rectB.left; startY = ptY - rectB.top;
     [origX, origY] = getXY(active);
+
+    downX = ptX;
+    downY = ptY;
+    moved = false;
+
     e.preventDefault();
   }
 
@@ -137,26 +148,36 @@
     active.style.setProperty('--x', px(nx));
     active.style.setProperty('--y', px(ny));
     active.style.transform = `translate3d(${nx}px, ${ny}px, 0)`;
+
+    if (Math.abs(ptX - downX) > 5 || Math.abs(ptY - downY) > 5) {
+      moved = true;
+    }
   }
 
-  function onUp(){ active = null; }
+  function onUp(e){ 
+    if (active) {
+      if (!moved) {
+        const img = active.querySelector('img');
+        openModal(img.src);
+      }
+    }
+    active = null; 
+  }
 
   board.addEventListener('pointerdown', onDown, {passive:false});
   window.addEventListener('pointermove', onMove, {passive:false});
   window.addEventListener('pointerup', onUp, {passive:true});
   window.addEventListener('pointercancel', onUp, {passive:true});
 
-  // Modal açma
+  // Modal
   const modal = document.getElementById('modal');
   const modalImg = document.getElementById('modalImg');
   const closeBtn = document.getElementById('closeBtn');
 
-  posters.forEach(img => {
-    img.addEventListener('click', () => {
-      modalImg.src = img.src;
-      modal.classList.add('show');
-    });
-  });
+  function openModal(src){
+    modalImg.src = src;
+    modal.classList.add('show');
+  }
 
   closeBtn.addEventListener('click', () => {
     modal.classList.remove('show');

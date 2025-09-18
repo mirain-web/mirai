@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sürüklenebilir Posterler</title>
+<style>
+  :root { --gap: 16px; --poster-w: 240px; --poster-h: 340px; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; background:#0f0f10; color:#eee; }
+  .wrap { min-height: 100vh; padding: 24px; display: grid; place-items: center; }
+  .board {
+    position: relative;
+    width: min(1200px, 92vw);
+    height: min(760px, 80vh);
+    background: linear-gradient(180deg,#151518,#0b0b0c);
+    border: 1px solid #242428; border-radius: 16px;
+    overflow: hidden;
+  }
+  .poster {
+    position: absolute; width: var(--poster-w); height: var(--poster-h);
+    user-select: none; touch-action: none; cursor: grab;
+    border-radius: 12px; overflow: hidden; box-shadow: 0 12px 30px rgba(0,0,0,.35);
+    transform: translate3d(var(--x,0px), var(--y,0px), 0) scale(1);
+    transition: box-shadow .12s ease, transform .08s ease;
+  }
+  .poster:active { cursor: grabbing; box-shadow: 0 16px 36px rgba(0,0,0,.5); transform: translate3d(var(--x,0px), var(--y,0px), 0) scale(1.02); }
+  .poster img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .hint { position: absolute; inset: auto 12px 12px auto; font-size: 12px; opacity: .6; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="board" id="board">
+      <!-- Poster 1 -->
+      <div class="poster" style="--x:24px; --y:24px;">
+        <img src="poster%20day%201.png" alt="Poster Day 1" />
+      </div>
+      <!-- Poster 2 -->
+      <div class="poster" style="--x:300px; --y:64px;">
+        <img src="Hisha_Ganja_Cover.png" alt="Hisha Ganja Cover" />
+      </div>
+      <div class="hint">Tut ve sürükle ✦</div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  const board = document.getElementById('board');
+  let active = null, startX = 0, startY = 0, origX = 0, origY = 0, zTop = 10;
+
+  function px(n){ return `${n}px`; }
+  function getXY(el){
+    const cs = getComputedStyle(el);
+    return [parseFloat(cs.getPropertyValue('--x')||'0')||0,
+            parseFloat(cs.getPropertyValue('--y')||'0')||0];
+  }
+  function clamp(n, min, max){ return Math.max(min, Math.min(max, n)); }
+
+  function onDown(e){
+    const target = e.target.closest('.poster');
+    if(!target) return;
+    active = target;
+    active.style.zIndex = ++zTop;
+    const rectB = board.getBoundingClientRect();
+    const ptX = (e.clientX ?? (e.touches && e.touches[0].clientX));
+    const ptY = (e.clientY ?? (e.touches && e.touches[0].clientY));
+    startX = ptX - rectB.left; startY = ptY - rectB.top;
+    [origX, origY] = getXY(active);
+    active.setPointerCapture?.(e.pointerId ?? 1);
+    e.preventDefault();
+  }
+
+  function onMove(e){
+    if(!active) return;
+    const rectB = board.getBoundingClientRect();
+    const ptX = (e.clientX ?? (e.touches && e.touches[0].clientX));
+    const ptY = (e.clientY ?? (e.touches && e.touches[0].clientY));
+    const x = ptX - rectB.left; const y = ptY - rectB.top;
+
+    const dx = x - startX, dy = y - startY;
+    const rectP = active.getBoundingClientRect();
+    const maxX = rectB.width - rectP.width;
+    const maxY = rectB.height - rectP.height;
+
+    const nx = clamp(origX + dx, -2, maxX+2);
+    const ny = clamp(origY + dy, -2, maxY+2);
+
+    active.style.setProperty('--x', px(nx));
+    active.style.setProperty('--y', px(ny));
+  }
+
+  function onUp(){ active = null; }
+
+  board.addEventListener('pointerdown', onDown, {passive:false});
+  window.addEventListener('pointermove', onMove, {passive:false});
+  window.addEventListener('pointerup', onUp, {passive:true});
+  window.addEventListener('pointercancel', onUp, {passive:true});
+})();
+</script>
+</body>
+</html>
